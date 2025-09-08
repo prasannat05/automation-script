@@ -1,0 +1,12 @@
+import shutil, datetime
+
+def create_backup(src_folder, dest_folder):
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_name = f"backup_{timestamp}"
+    shutil.make_archive(f"{dest_folder}/{backup_name}", "zip", src_folder)
+
+if __name__ == "__main__":
+    src = input("Enter source folder path: ")
+    dest = input("Enter destination folder path: ")
+    create_backup(src, dest)
+    print("✅ Backup created successfully!")
