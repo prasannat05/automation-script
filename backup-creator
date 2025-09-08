@@ -9,4 +9,4 @@ if __name__ == "__main__":
     src = input("Enter source folder path: ")
     dest = input("Enter destination folder path: ")
     create_backup(src, dest)
-    print("✅ Backup created successfully!")
+    print("Backup created successfully!")
