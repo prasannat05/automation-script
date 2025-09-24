@@ -1,0 +1,133 @@
+{
+  "name": "Grievance Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "grievances.csv",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Read CSV",
+      "type": "n8n-nodes-base.readBinaryFile",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "data"
+      },
+      "id": "2",
+      "name": "Parse CSV",
+      "type": "n8n-nodes-base.csv",
+      "typeVersion": 1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const text = (item.grievance_text || '').toLowerCase();\nlet type = 'others';\nif (/exam|result|grade|marks/.test(text)) type = 'exams';\nelse if (/admission|enroll|register/.test(text)) type = 'admissions';\nelse if (/fee|payment|refund/.test(text)) type = 'fees';\nelse if (/hostel|food|warden/.test(text)) type = 'hostel';\nelse if (/faculty|teacher|professor/.test(text)) type = 'faculty';\nelse if (/power|electric|wifi|plumbing/.test(text)) type = 'infrastructure';\n\nlet priority = 5;\nif (/urgent|immediately|asap/.test(text)) priority += 2;\nif (/life|danger|harass/.test(text)) priority += 3;\nif (item.complaint_submitted && item.complaint_submitted.toString().toLowerCase() === 'yes') priority += 2;\npriority = Math.min(10, priority);\n\nreturn [{\n  ...item,\n  predicted_type: type,\n  priority_score: priority\n}];"
+      },
+      "id": "3",
+      "name": "Classify & Score",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "your_email@example.com",
+        "toEmail": "={{$json[\"email\"]}}",
+        "subject": "Acknowledgement: Grievance Received",
+        "text": "Hello {{$json[\"name\"]}},\\n\\nWe have received your grievance of type {{$json[\"predicted_type\"]}}.\\nPriority Score: {{$json[\"priority_score\"]}}.\\n\\nThank you, Support Team"
+      },
+      "id": "4",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1000, 300],
+      "credentials": {
+        "smtp": {
+          "id": "your-smtp-credential-id",
+          "name": "SMTP Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "binaryPropertyName": "data",
+        "options": {
+          "includeHeaders": true
+        }
+      },
+      "id": "5",
+      "name": "Convert to CSV",
+      "type": "n8n-nodes-base.csv",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    },
+    {
+      "parameters": {
+        "fileName": "processed_grievances.csv",
+        "binaryData": "data"
+      },
+      "id": "6",
+      "name": "Write CSV",
+      "type": "n8n-nodes-base.writeBinaryFile",
+      "typeVersion": 1,
+      "position": [1500, 300]
+    }
+  ],
+  "connections": {
+    "Read CSV": {
+      "main": [
+        [
+          {
+            "node": "Parse CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse CSV": {
+      "main": [
+        [
+          {
+            "node": "Classify & Score",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify & Score": {
+      "main": [
+        [
+          {
+            "node": "Send Email",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Convert to CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to CSV": {
+      "main": [
+        [
+          {
+            "node": "Write CSV",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "GrievanceWorkflow"
+}
